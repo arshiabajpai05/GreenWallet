@@ -94,31 +94,45 @@ const WaterCalculator = () => {
     });
   };
 
-  const saveCalculation = () => {
-    if (!results) return;
+  const saveCalculation = async () => {
+    if (!results || saving) return;
     
-    const actionLabel = waterActions.find(a => a.value === formData.action)?.label || 'Water Saving';
-    
-    addCalculation({
-      type: 'water',
-      title: calculationType === 'bill' ? 'Monthly Bill Reduction' : actionLabel,
-      moneySaved: results.moneySaved,
-      co2Reduced: results.co2Reduced,
-      points: results.points,
-      details: {
-        litersPerMonth: `${results.litersPerMonth.toFixed(0)}L`,
-        action: actionLabel
-      }
-    });
+    setSaving(true);
+    try {
+      const actionLabel = waterActions.find(a => a.value === formData.action)?.label || 'Water Saving';
+      
+      await calculationsAPI.create({
+        type: 'water',
+        title: calculationType === 'bill' ? 'Monthly Bill Reduction' : actionLabel,
+        moneySaved: results.moneySaved,
+        co2Reduced: results.co2Reduced,
+        points: results.points,
+        details: {
+          litersPerMonth: `${results.litersPerMonth.toFixed(0)}L`,
+          action: actionLabel
+        }
+      });
 
-    toast({
-      title: "Calculation saved!",
-      description: `Saved ₹${results.moneySaved.toFixed(2)} in water savings.`
-    });
+      await refreshStats();
 
-    // Reset form
-    setFormData({ monthlyBill: '', litersPerMonth: '', action: 'rainwater', profileName: '' });
-    setResults(null);
+      toast({
+        title: "Calculation saved!",
+        description: `Saved ₹${results.moneySaved.toFixed(2)} in water savings.`
+      });
+
+      // Reset form
+      setFormData({ monthlyBill: '', litersPerMonth: '', action: 'rainwater', profileName: '' });
+      setResults(null);
+    } catch (error) {
+      console.error('Failed to save calculation:', error);
+      toast({
+        title: "Error",
+        description: "Failed to save calculation. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
