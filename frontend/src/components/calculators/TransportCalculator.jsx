@@ -101,34 +101,48 @@ const TransportCalculator = () => {
     });
   };
 
-  const saveCalculation = () => {
-    if (!results) return;
+  const saveCalculation = async () => {
+    if (!results || saving) return;
     
-    const currentLabel = transportModes.find(t => t.value === formData.currentMode)?.label;
-    const alternateLabel = transportModes.find(t => t.value === formData.alternateMode)?.label;
-    
-    addCalculation({
-      type: 'transport',
-      title: `${currentLabel} → ${alternateLabel}`,
-      moneySaved: results.moneySaved,
-      co2Reduced: results.co2Reduced,
-      points: results.points,
-      details: {
-        distance: `${formData.distance}km`,
-        frequency: formData.frequency,
-        from: currentLabel,
-        to: alternateLabel
-      }
-    });
+    setSaving(true);
+    try {
+      const currentLabel = transportModes.find(t => t.value === formData.currentMode)?.label;
+      const alternateLabel = transportModes.find(t => t.value === formData.alternateMode)?.label;
+      
+      await calculationsAPI.create({
+        type: 'transport',
+        title: `${currentLabel} → ${alternateLabel}`,
+        money_saved: results.moneySaved,
+        co2_reduced: results.co2Reduced,
+        points: results.points,
+        details: {
+          distance: `${formData.distance}km`,
+          frequency: formData.frequency,
+          from: currentLabel,
+          to: alternateLabel
+        }
+      });
 
-    toast({
-      title: "Calculation saved!",
-      description: `Saved ₹${results.moneySaved.toFixed(2)} in transport savings.`
-    });
+      await refreshStats();
 
-    // Reset form
-    setFormData({ distance: '', frequency: 'daily', currentMode: '', alternateMode: '', profileName: '' });
-    setResults(null);
+      toast({
+        title: "Calculation saved!",
+        description: `Saved ₹${results.moneySaved.toFixed(2)} in transport savings.`
+      });
+
+      // Reset form
+      setFormData({ distance: '', frequency: 'daily', currentMode: '', alternateMode: '', profileName: '' });
+      setResults(null);
+    } catch (error) {
+      console.error('Failed to save calculation:', error);
+      toast({
+        title: "Error",
+        description: "Failed to save calculation. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
