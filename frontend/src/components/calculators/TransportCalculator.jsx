@@ -304,9 +304,10 @@ const TransportCalculator = () => {
                 onClick={saveCalculation} 
                 className="w-full bg-green-600 hover:bg-green-700"
                 size="lg"
+                disabled={saving}
               >
                 <Save className="h-4 w-4 mr-2" />
-                Save to My Account
+                {saving ? 'Saving...' : 'Save to My Account'}
               </Button>
             </CardContent>
           </Card>
