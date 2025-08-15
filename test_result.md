@@ -101,3 +101,170 @@
 #====================================================================================================
 # Testing Data - Main Agent and testing sub agent both should log testing data below this section
 #====================================================================================================
+
+user_problem_statement: "Test the GreenWallet backend API endpoints including health check, authentication flow, user stats, calculation CRUD, and profile CRUD operations"
+
+backend:
+  - task: "API Health Check"
+    implemented: true
+    working: true
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        - working: true
+          agent: "testing"
+          comment: "Health check endpoint /api/ returns correct response with GreenWallet API message and version info"
+
+  - task: "User Registration"
+    implemented: true
+    working: true
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        - working: true
+          agent: "testing"
+          comment: "POST /api/auth/register successfully creates new users, returns access token and user data. Fixed ID field handling (_id vs id)"
+
+  - task: "User Login"
+    implemented: true
+    working: true
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        - working: true
+          agent: "testing"
+          comment: "POST /api/auth/login successfully authenticates users and returns JWT token with user data"
+
+  - task: "Get Current User"
+    implemented: true
+    working: true
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        - working: true
+          agent: "testing"
+          comment: "GET /api/auth/me successfully returns current user profile when authenticated with valid JWT token"
+
+  - task: "User Statistics"
+    implemented: true
+    working: true
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        - working: true
+          agent: "testing"
+          comment: "GET /api/users/stats successfully returns user statistics including total_saved, total_co2_reduced, total_points, and calculation_count"
+
+  - task: "Create Calculation"
+    implemented: true
+    working: true
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        - working: true
+          agent: "testing"
+          comment: "POST /api/calculations successfully creates new calculations with proper data validation and returns calculation response"
+
+  - task: "Get Calculations"
+    implemented: true
+    working: true
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        - working: true
+          agent: "testing"
+          comment: "GET /api/calculations successfully retrieves user's calculations with proper filtering and pagination support"
+
+  - task: "Update Calculation"
+    implemented: true
+    working: true
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        - working: true
+          agent: "testing"
+          comment: "PUT /api/calculations/{id} successfully updates existing calculations with partial data updates"
+
+  - task: "Delete Calculation"
+    implemented: true
+    working: true
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        - working: true
+          agent: "testing"
+          comment: "DELETE /api/calculations/{id} successfully deletes calculations and returns appropriate success message"
+
+  - task: "Create Profile"
+    implemented: true
+    working: true
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        - working: true
+          agent: "testing"
+          comment: "POST /api/profiles successfully creates new calculator profiles with proper data validation"
+
+  - task: "Get Profiles"
+    implemented: true
+    working: true
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        - working: true
+          agent: "testing"
+          comment: "GET /api/profiles/{type} successfully retrieves user's profiles filtered by profile type (solar, water, transport, electricity)"
+
+  - task: "Delete Profile"
+    implemented: true
+    working: true
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        - working: true
+          agent: "testing"
+          comment: "DELETE /api/profiles/{id} successfully deletes profiles and returns appropriate success message"
+
+frontend:
+  # No frontend testing performed as per instructions
+
+metadata:
+  created_by: "testing_agent"
+  version: "1.0"
+  test_sequence: 1
+  run_ui: false
+
+test_plan:
+  current_focus:
+    - "All backend API endpoints tested and working"
+  stuck_tasks: []
+  test_all: true
+  test_priority: "high_first"
+
+agent_communication:
+    - agent: "testing"
+      message: "Comprehensive backend API testing completed successfully. All 12 endpoints tested including health check, complete authentication flow, user stats, full CRUD operations for calculations and profiles. Fixed ID field handling issue (_id vs id) in test suite. All tests passing with 100% success rate. Backend API is fully functional and ready for production use."
