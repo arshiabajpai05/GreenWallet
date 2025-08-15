@@ -267,8 +267,10 @@ class GreenWalletAPITester:
             
             if response.status_code == 200:
                 data = response.json()
-                if "id" in data and data["name"] == payload["name"]:
-                    self.test_profile_id = data["id"]
+                # Handle both _id and id fields
+                profile_id = data.get("id") or data.get("_id")
+                if profile_id and data["name"] == payload["name"]:
+                    self.test_profile_id = profile_id
                     self.log("✅ Create profile successful")
                     self.results["profile_create"] = True
                     return True
