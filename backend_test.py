@@ -181,8 +181,10 @@ class GreenWalletAPITester:
             
             if response.status_code == 200:
                 data = response.json()
-                if "id" in data and data["title"] == payload["title"]:
-                    self.test_calculation_id = data["id"]
+                # Handle both _id and id fields
+                calc_id = data.get("id") or data.get("_id")
+                if calc_id and data["title"] == payload["title"]:
+                    self.test_calculation_id = calc_id
                     self.log("✅ Create calculation successful")
                     self.results["calculation_create"] = True
                     return True
