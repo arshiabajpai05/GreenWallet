@@ -19,10 +19,23 @@ const WaterCalculator = () => {
     profileName: ''
   });
   const [results, setResults] = useState(null);
-  const [profiles] = useState(mockProfiles.water);
-  
-  const { addCalculation } = useAuth();
+  const { refreshStats } = useAuth();
   const { toast } = useToast();
+  const [profiles, setProfiles] = useState([]);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    loadProfiles();
+  }, []);
+
+  const loadProfiles = async () => {
+    try {
+      const data = await profilesAPI.getByType('water');
+      setProfiles(data);
+    } catch (error) {
+      console.error('Failed to load profiles:', error);
+    }
+  };
 
   const waterActions = [
     { value: 'rainwater', label: 'Rainwater Harvesting', multiplier: 1.0 },
