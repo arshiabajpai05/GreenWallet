@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
@@ -8,7 +8,8 @@ import { Badge } from '../ui/badge';
 import { Zap, IndianRupee, Leaf, Save, Calculator } from 'lucide-react';
 import { useAuth } from '../../App';
 import { useToast } from '../../hooks/use-toast';
-import { mockProfiles, RATES } from '../../mock';
+import { RATES } from '../../mock';
+import { calculationsAPI, profilesAPI } from '../../services/api';
 
 const ElectricityCalculator = () => {
   const [formData, setFormData] = useState({
@@ -18,10 +19,24 @@ const ElectricityCalculator = () => {
     profileName: ''
   });
   const [results, setResults] = useState(null);
-  const [profiles] = useState(mockProfiles.electricity);
+  const [profiles, setProfiles] = useState([]);
+  const [saving, setSaving] = useState(false);
   
-  const { addCalculation } = useAuth();
+  const { refreshStats } = useAuth();
   const { toast } = useToast();
+
+  useEffect(() => {
+    loadProfiles();
+  }, []);
+
+  const loadProfiles = async () => {
+    try {
+      const data = await profilesAPI.getByType('electricity');
+      setProfiles(data);
+    } catch (error) {
+      console.error('Failed to load profiles:', error);
+    }
+  };
 
   const appliances = [
     { value: 'ac_to_fan', label: 'Switch AC to Fan', fromPower: 1.5, toPower: 0.075 },
