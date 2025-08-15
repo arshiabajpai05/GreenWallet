@@ -124,7 +124,9 @@ class GreenWalletAPITester:
             
             if response.status_code == 200:
                 data = response.json()
-                if "id" in data and "email" in data and data["email"] == TEST_USER_EMAIL:
+                # Handle both _id and id fields
+                user_id = data.get("id") or data.get("_id")
+                if user_id and "email" in data and data["email"] == TEST_USER_EMAIL:
                     self.log("✅ Get current user successful")
                     self.results["auth_me"] = True
                     return True
