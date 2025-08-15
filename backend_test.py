@@ -292,8 +292,8 @@ class GreenWalletAPITester:
             if response.status_code == 200:
                 data = response.json()
                 if isinstance(data, list) and len(data) > 0:
-                    # Check if our test profile is in the list
-                    found = any(profile["id"] == self.test_profile_id for profile in data)
+                    # Check if our test profile is in the list (handle both _id and id)
+                    found = any((profile.get("id") or profile.get("_id")) == self.test_profile_id for profile in data)
                     if found:
                         self.log("✅ Get profiles successful")
                         self.results["profile_get"] = True
