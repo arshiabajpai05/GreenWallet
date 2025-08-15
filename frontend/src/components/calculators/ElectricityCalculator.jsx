@@ -85,32 +85,46 @@ const ElectricityCalculator = () => {
     });
   };
 
-  const saveCalculation = () => {
-    if (!results) return;
+  const saveCalculation = async () => {
+    if (!results || saving) return;
     
-    const applianceLabel = appliances.find(a => a.value === formData.appliance)?.label;
-    
-    addCalculation({
-      type: 'electricity',
-      title: applianceLabel || 'Electricity Saving',
-      moneySaved: results.moneySaved,
-      co2Reduced: results.co2Reduced,
-      points: results.points,
-      details: {
-        hoursPerDay: formData.hoursPerDay,
-        daysPerMonth: formData.daysPerMonth,
-        appliance: applianceLabel
-      }
-    });
+    setSaving(true);
+    try {
+      const applianceLabel = appliances.find(a => a.value === formData.appliance)?.label;
+      
+      await calculationsAPI.create({
+        type: 'electricity',
+        title: applianceLabel || 'Electricity Saving',
+        money_saved: results.moneySaved,
+        co2_reduced: results.co2Reduced,
+        points: results.points,
+        details: {
+          hoursPerDay: formData.hoursPerDay,
+          daysPerMonth: formData.daysPerMonth,
+          appliance: applianceLabel
+        }
+      });
 
-    toast({
-      title: "Calculation saved!",
-      description: `Saved ₹${results.moneySaved.toFixed(2)} in electricity savings.`
-    });
+      await refreshStats();
 
-    // Reset form
-    setFormData({ appliance: '', hoursPerDay: '', daysPerMonth: '30', profileName: '' });
-    setResults(null);
+      toast({
+        title: "Calculation saved!",
+        description: `Saved ₹${results.moneySaved.toFixed(2)} in electricity savings.`
+      });
+
+      // Reset form
+      setFormData({ appliance: '', hoursPerDay: '', daysPerMonth: '30', profileName: '' });
+      setResults(null);
+    } catch (error) {
+      console.error('Failed to save calculation:', error);
+      toast({
+        title: "Error",
+        description: "Failed to save calculation. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
