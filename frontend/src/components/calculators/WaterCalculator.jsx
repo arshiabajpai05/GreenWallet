@@ -9,6 +9,7 @@ import { Droplets, IndianRupee, Leaf, Save, Calculator } from 'lucide-react';
 import { useAuth } from '../../App';
 import { useToast } from '../../hooks/use-toast';
 import { mockProfiles, RATES } from '../../mock';
+import { profilesAPI } from '../../services/api';
 
 const WaterCalculator = () => {
   const [calculationType, setCalculationType] = useState('bill');
