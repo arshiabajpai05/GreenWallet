@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
@@ -20,14 +20,37 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../App';
 import { useToast } from '../hooks/use-toast';
+import { calculationsAPI } from '../services/api';
 
 const History = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('all');
   const [sortBy, setSortBy] = useState('date');
+  const [calculations, setCalculations] = useState([]);
+  const [loading, setLoading] = useState(true);
   
-  const { calculations, deleteCalculation } = useAuth();
+  const { refreshStats } = useAuth();
   const { toast } = useToast();
+
+  useEffect(() => {
+    loadCalculations();
+  }, []);
+
+  const loadCalculations = async () => {
+    try {
+      const data = await calculationsAPI.getAll();
+      setCalculations(data);
+    } catch (error) {
+      console.error('Failed to load calculations:', error);
+      toast({
+        title: "Error loading history",
+        description: "Failed to load your calculation history.",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const getTypeIcon = (type) => {
     const icons = {
@@ -57,11 +80,11 @@ const History = () => {
   }).sort((a, b) => {
     switch (sortBy) {
       case 'date':
-        return new Date(b.date) - new Date(a.date);
+        return new Date(b.created_at) - new Date(a.created_at);
       case 'savings':
-        return b.moneySaved - a.moneySaved;
+        return b.money_saved - a.money_saved;
       case 'co2':
-        return b.co2Reduced - a.co2Reduced;
+        return b.co2_reduced - a.co2_reduced;
       case 'points':
         return b.points - a.points;
       default:
@@ -69,19 +92,46 @@ const History = () => {
     }
   });
 
-  const handleDelete = (id, title) => {
-    deleteCalculation(id);
-    toast({
-      title: "Calculation deleted",
-      description: `"${title}" has been removed from your history.`
-    });
+  const handleDelete = async (id, title) => {
+    try {
+      await calculationsAPI.delete(id);
+      setCalculations(prev => prev.filter(calc => calc.id !== id));
+      await refreshStats(); // Refresh user stats after deletion
+      toast({
+        title: "Calculation deleted",
+        description: `"${title}" has been removed from your history.`
+      });
+    } catch (error) {
+      console.error('Failed to delete calculation:', error);
+      toast({
+        title: "Delete failed",
+        description: "Failed to delete the calculation. Please try again.",
+        variant: "destructive"
+      });
+    }
   };
 
   const totalStats = calculations.reduce((acc, calc) => ({
-    moneySaved: acc.moneySaved + calc.moneySaved,
-    co2Reduced: acc.co2Reduced + calc.co2Reduced,
+    moneySaved: acc.moneySaved + calc.money_saved,
+    co2Reduced: acc.co2Reduced + calc.co2_reduced,
     points: acc.points + calc.points
   }), { moneySaved: 0, co2Reduced: 0, points: 0 });
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center space-x-3">
+          <div className="p-3 bg-gray-100 rounded-full animate-pulse">
+            <div className="h-8 w-8"></div>
+          </div>
+          <div className="animate-pulse">
+            <div className="h-8 bg-gray-200 rounded w-48 mb-2"></div>
+            <div className="h-4 bg-gray-200 rounded w-64"></div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -208,7 +258,7 @@ const History = () => {
                         <h3 className="text-lg font-semibold text-gray-900">{calc.title}</h3>
                         <div className="flex items-center space-x-2 text-sm text-gray-500 mt-1">
                           <Calendar className="h-4 w-4" />
-                          <span>{new Date(calc.date).toLocaleDateString('en-IN', { 
+                          <span>{new Date(calc.created_at).toLocaleDateString('en-IN', { 
                             year: 'numeric', 
                             month: 'long', 
                             day: 'numeric' 
@@ -216,7 +266,7 @@ const History = () => {
                           <span className="capitalize">• {calc.type}</span>
                         </div>
                         {/* Details */}
-                        {calc.details && (
+                        {calc.details && Object.keys(calc.details).length > 0 && (
                           <div className="mt-2 text-sm text-gray-600">
                             {Object.entries(calc.details).map(([key, value]) => (
                               <span key={key} className="mr-4">
@@ -233,10 +283,10 @@ const History = () => {
                       <div className="text-right space-y-1">
                         <div className="flex items-center space-x-3">
                           <Badge variant="secondary" className="bg-green-100 text-green-700">
-                            ₹{calc.moneySaved.toFixed(2)}
+                            ₹{calc.money_saved.toFixed(2)}
                           </Badge>
                           <Badge variant="secondary" className="bg-emerald-100 text-emerald-700">
-                            {calc.co2Reduced.toFixed(1)} kg CO₂
+                            {calc.co2_reduced.toFixed(1)} kg CO₂
                           </Badge>
                           <Badge variant="secondary" className="bg-amber-100 text-amber-700">
                             {calc.points} pts

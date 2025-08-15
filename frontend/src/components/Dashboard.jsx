@@ -1,15 +1,31 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
 import { IndianRupee, Leaf, Trophy, TrendingUp, Sun, Droplets, Car, Zap } from 'lucide-react';
 import { useAuth } from '../App';
 import { Link } from 'react-router-dom';
+import { calculationsAPI } from '../services/api';
 
 const Dashboard = () => {
-  const { user, calculations } = useAuth();
+  const { user, userStats } = useAuth();
+  const [recentCalculations, setRecentCalculations] = useState([]);
+  const [loading, setLoading] = useState(true);
   
-  const recentCalculations = calculations.slice(0, 5);
+  useEffect(() => {
+    loadRecentCalculations();
+  }, []);
+
+  const loadRecentCalculations = async () => {
+    try {
+      const calculations = await calculationsAPI.getAll({ limit: 5 });
+      setRecentCalculations(calculations);
+    } catch (error) {
+      console.error('Failed to load recent calculations:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const getTypeIcon = (type) => {
     const icons = {
@@ -31,6 +47,31 @@ const Dashboard = () => {
     return colors[type] || 'text-gray-600 bg-gray-100';
   };
 
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div className="bg-gradient-to-r from-green-600 to-emerald-600 rounded-lg p-6 text-white">
+          <div className="animate-pulse">
+            <div className="h-8 bg-white/20 rounded w-64 mb-2"></div>
+            <div className="h-4 bg-white/20 rounded w-48"></div>
+          </div>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {[1, 2, 3].map(i => (
+            <Card key={i}>
+              <CardContent className="p-6">
+                <div className="animate-pulse">
+                  <div className="h-4 bg-gray-200 rounded w-24 mb-2"></div>
+                  <div className="h-8 bg-gray-200 rounded w-32"></div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Welcome Header */}
@@ -49,7 +90,9 @@ const Dashboard = () => {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-700">₹{user?.totalSaved?.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>
+            <div className="text-2xl font-bold text-green-700">
+              ₹{userStats.total_saved?.toLocaleString('en-IN', { minimumFractionDigits: 2 }) || '0.00'}
+            </div>
             <p className="text-xs text-gray-500 mt-1">
               <TrendingUp className="h-3 w-3 inline mr-1" />
               Your financial impact
@@ -65,7 +108,9 @@ const Dashboard = () => {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-emerald-700">{user?.totalCO2Reduced?.toLocaleString('en-IN', { minimumFractionDigits: 1 })} kg</div>
+            <div className="text-2xl font-bold text-emerald-700">
+              {userStats.total_co2_reduced?.toLocaleString('en-IN', { minimumFractionDigits: 1 }) || '0.0'} kg
+            </div>
             <p className="text-xs text-gray-500 mt-1">
               <TrendingUp className="h-3 w-3 inline mr-1" />
               Your environmental impact
@@ -81,7 +126,9 @@ const Dashboard = () => {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-amber-700">{user?.totalPoints?.toLocaleString('en-IN')}</div>
+            <div className="text-2xl font-bold text-amber-700">
+              {userStats.total_points?.toLocaleString('en-IN') || '0'}
+            </div>
             <p className="text-xs text-gray-500 mt-1">
               <TrendingUp className="h-3 w-3 inline mr-1" />
               Keep earning more!
@@ -146,16 +193,18 @@ const Dashboard = () => {
                       </div>
                       <div>
                         <h4 className="font-medium text-gray-900">{calc.title}</h4>
-                        <p className="text-sm text-gray-500">{calc.date}</p>
+                        <p className="text-sm text-gray-500">
+                          {new Date(calc.created_at).toLocaleDateString('en-IN')}
+                        </p>
                       </div>
                     </div>
                     <div className="text-right space-y-1">
                       <div className="flex items-center space-x-4">
                         <Badge variant="secondary" className="bg-green-100 text-green-700">
-                          ₹{calc.moneySaved.toFixed(2)}
+                          ₹{calc.money_saved.toFixed(2)}
                         </Badge>
                         <Badge variant="secondary" className="bg-emerald-100 text-emerald-700">
-                          {calc.co2Reduced.toFixed(1)} kg CO₂
+                          {calc.co2_reduced.toFixed(1)} kg CO₂
                         </Badge>
                         <Badge variant="secondary" className="bg-amber-100 text-amber-700">
                           {calc.points} pts

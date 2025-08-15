@@ -1,4 +1,4 @@
-import React, { useState, createContext, useContext } from 'react';
+import React, { useState, createContext, useContext, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from './components/ui/toaster';
 import './App.css';
@@ -13,8 +13,9 @@ import ElectricityCalculator from './components/calculators/ElectricityCalculato
 import History from './components/History';
 import Layout from './components/Layout';
 
-// Mock data
-import { mockUser, mockCalculations } from './mock';
+// Import API services
+import { authAPI, userAPI } from './services/api';
+import { useToast } from './hooks/use-toast';
 
 // Auth Context
 const AuthContext = createContext();
@@ -29,71 +30,131 @@ export const useAuth = () => {
 
 function App() {
   const [user, setUser] = useState(null);
-  const [calculations, setCalculations] = useState(mockCalculations);
+  const [loading, setLoading] = useState(true);
+  const [userStats, setUserStats] = useState({
+    total_saved: 0,
+    total_co2_reduced: 0,
+    total_points: 0,
+    calculation_count: 0
+  });
+  const { toast } = useToast();
 
-  const login = (email, password) => {
-    // Mock login - in real app, this would call API
-    if (email && password) {
-      setUser(mockUser);
-      return true;
+  // Check for existing auth on app load
+  useEffect(() => {
+    const checkAuth = async () => {
+      const token = localStorage.getItem('auth_token');
+      const savedUser = localStorage.getItem('user_data');
+      
+      if (token && savedUser) {
+        try {
+          // Verify token is still valid
+          const userData = await authAPI.getCurrentUser();
+          setUser(userData);
+          await loadUserStats();
+        } catch (error) {
+          console.error('Auth check failed:', error);
+          localStorage.removeItem('auth_token');
+          localStorage.removeItem('user_data');
+        }
+      }
+      setLoading(false);
+    };
+    
+    checkAuth();
+  }, []);
+
+  const loadUserStats = async () => {
+    try {
+      const stats = await userAPI.getStats();
+      setUserStats(stats);
+    } catch (error) {
+      console.error('Failed to load user stats:', error);
     }
-    return false;
   };
 
-  const register = (email, password, name) => {
-    // Mock register - in real app, this would call API
-    if (email && password && name) {
-      const newUser = { ...mockUser, email, name };
-      setUser(newUser);
+  const login = async (email, password) => {
+    try {
+      const result = await authAPI.login({ email, password });
+      
+      // Store token and user data
+      localStorage.setItem('auth_token', result.access_token);
+      localStorage.setItem('user_data', JSON.stringify(result.user));
+      
+      setUser(result.user);
+      await loadUserStats();
+      
       return true;
+    } catch (error) {
+      console.error('Login failed:', error);
+      toast({
+        title: "Login failed",
+        description: error.response?.data?.detail || "Please check your credentials and try again.",
+        variant: "destructive"
+      });
+      return false;
     }
-    return false;
+  };
+
+  const register = async (email, password, name) => {
+    try {
+      const result = await authAPI.register({ email, password, name });
+      
+      // Store token and user data
+      localStorage.setItem('auth_token', result.access_token);
+      localStorage.setItem('user_data', JSON.stringify(result.user));
+      
+      setUser(result.user);
+      await loadUserStats();
+      
+      return true;
+    } catch (error) {
+      console.error('Registration failed:', error);
+      toast({
+        title: "Registration failed",
+        description: error.response?.data?.detail || "Please check your information and try again.",
+        variant: "destructive"
+      });
+      return false;
+    }
   };
 
   const logout = () => {
+    authAPI.logout();
     setUser(null);
+    setUserStats({
+      total_saved: 0,
+      total_co2_reduced: 0,
+      total_points: 0,
+      calculation_count: 0
+    });
   };
 
-  const addCalculation = (calculation) => {
-    const newCalc = {
-      ...calculation,
-      id: Date.now().toString(),
-      date: new Date().toISOString().split('T')[0]
-    };
-    setCalculations(prev => [newCalc, ...prev]);
-    
-    // Update user totals (mock calculation)
-    setUser(prev => ({
-      ...prev,
-      totalSaved: prev.totalSaved + calculation.moneySaved,
-      totalCO2Reduced: prev.totalCO2Reduced + calculation.co2Reduced,
-      totalPoints: prev.totalPoints + calculation.points
-    }));
-  };
-
-  const deleteCalculation = (id) => {
-    const calcToDelete = calculations.find(c => c.id === id);
-    if (calcToDelete) {
-      setCalculations(prev => prev.filter(c => c.id !== id));
-      // Update user totals
-      setUser(prev => ({
-        ...prev,
-        totalSaved: prev.totalSaved - calcToDelete.moneySaved,
-        totalCO2Reduced: prev.totalCO2Reduced - calcToDelete.co2Reduced,
-        totalPoints: prev.totalPoints - calcToDelete.points
-      }));
-    }
+  const refreshStats = async () => {
+    await loadUserStats();
   };
 
   const authValue = {
     user,
-    calculations,
+    userStats,
     login,
     register,
     logout,
-    addCalculation,
-    deleteCalculation
+    refreshStats,
+    loading
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-green-600 rounded-full mb-4">
+            <div className="w-8 h-8 border-4 border-white border-t-transparent rounded-full animate-spin"></div>
+          </div>
+          <p className="text-gray-600">Loading GreenWallet...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <AuthContext.Provider value={authValue}>

@@ -8,7 +8,8 @@ import { Badge } from '../ui/badge';
 import { Sun, IndianRupee, Leaf, Save, Calculator } from 'lucide-react';
 import { useAuth } from '../../App';
 import { useToast } from '../../hooks/use-toast';
-import { mockProfiles, RATES } from '../../mock';
+import { calculationsAPI, profilesAPI } from '../../services/api';
+import { RATES } from '../../mock'; // Keep rates as constants
 
 const SolarCalculator = () => {
   const [formData, setFormData] = useState({
@@ -18,10 +19,24 @@ const SolarCalculator = () => {
   });
   const [results, setResults] = useState(null);
   const [showSaveProfile, setShowSaveProfile] = useState(false);
-  const [profiles] = useState(mockProfiles.solar);
+  const [profiles, setProfiles] = useState([]);
+  const [saving, setSaving] = useState(false);
   
-  const { addCalculation } = useAuth();
+  const { refreshStats } = useAuth();
   const { toast } = useToast();
+
+  useEffect(() => {
+    loadProfiles();
+  }, []);
+
+  const loadProfiles = async () => {
+    try {
+      const data = await profilesAPI.getByType('solar');
+      setProfiles(data);
+    } catch (error) {
+      console.error('Failed to load profiles:', error);
+    }
+  };
 
   const calculateSavings = () => {
     const panelSize = parseFloat(formData.panelSize);
@@ -56,30 +71,83 @@ const SolarCalculator = () => {
     });
   };
 
-  const saveCalculation = () => {
+  const saveCalculation = async () => {
     if (!results) return;
     
-    addCalculation({
-      type: 'solar',
-      title: `Solar Panel (${formData.panelSize}kW)`,
-      moneySaved: results.moneySaved,
-      co2Reduced: results.co2Reduced,
-      points: results.points,
-      details: {
-        panelSize: formData.panelSize + 'kW',
-        sunlightHours: formData.sunlightHours,
-        monthlyGeneration: results.monthlyGeneration.toFixed(0) + ' kWh'
-      }
-    });
+    setSaving(true);
+    try {
+      await calculationsAPI.create({
+        type: 'solar',
+        title: `Solar Panel (${formData.panelSize}kW)`,
+        money_saved: results.moneySaved,
+        co2_reduced: results.co2Reduced,
+        points: results.points,
+        details: {
+          panel_size: formData.panelSize + 'kW',
+          sunlight_hours: formData.sunlightHours,
+          monthly_generation: results.monthlyGeneration.toFixed(0) + ' kWh'
+        }
+      });
 
-    toast({
-      title: "Calculation saved!",
-      description: `Saved ₹${results.moneySaved.toFixed(2)} in solar savings.`
-    });
+      await refreshStats(); // Refresh user stats
 
-    // Reset form
-    setFormData({ panelSize: '', sunlightHours: '', profileName: '' });
-    setResults(null);
+      toast({
+        title: "Calculation saved!",
+        description: `Saved ₹${results.moneySaved.toFixed(2)} in solar savings.`
+      });
+
+      // Reset form
+      setFormData({ panelSize: '', sunlightHours: '', profileName: '' });
+      setResults(null);
+    } catch (error) {
+      console.error('Failed to save calculation:', error);
+      toast({
+        title: "Save failed",
+        description: "Failed to save calculation. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const saveProfile = async () => {
+    if (!formData.profileName || !formData.panelSize || !formData.sunlightHours) {
+      toast({
+        title: "Missing information",
+        description: "Please fill in profile name and calculator fields.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      await profilesAPI.create({
+        type: 'solar',
+        name: formData.profileName,
+        data: {
+          panel_size: parseFloat(formData.panelSize),
+          sunlight_hours: parseFloat(formData.sunlightHours)
+        }
+      });
+
+      await loadProfiles(); // Refresh profiles list
+
+      toast({
+        title: "Profile saved!",
+        description: `"${formData.profileName}" has been saved for future use.`
+      });
+
+      setShowSaveProfile(false);
+      setFormData(prev => ({ ...prev, profileName: '' }));
+    } catch (error) {
+      console.error('Failed to save profile:', error);
+      toast({
+        title: "Save failed",
+        description: "Failed to save profile. Please try again.",
+        variant: "destructive"
+      });
+    }
   };
 
   const loadProfile = (profileId) => {
@@ -87,8 +155,8 @@ const SolarCalculator = () => {
     if (profile) {
       setFormData(prev => ({
         ...prev,
-        panelSize: profile.panelSize.toString(),
-        sunlightHours: profile.sunlightHours.toString()
+        panelSize: profile.data.panel_size.toString(),
+        sunlightHours: profile.data.sunlight_hours.toString()
       }));
     }
   };
@@ -120,21 +188,23 @@ const SolarCalculator = () => {
           </CardHeader>
           <CardContent className="space-y-6">
             {/* Load Profile */}
-            <div className="space-y-2">
-              <Label>Load Saved Profile (Optional)</Label>
-              <Select onValueChange={loadProfile}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Choose a saved setup" />
-                </SelectTrigger>
-                <SelectContent>
-                  {profiles.map(profile => (
-                    <SelectItem key={profile.id} value={profile.id}>
-                      {profile.name} ({profile.panelSize}kW, {profile.sunlightHours}h)
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            {profiles.length > 0 && (
+              <div className="space-y-2">
+                <Label>Load Saved Profile (Optional)</Label>
+                <Select onValueChange={loadProfile}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Choose a saved setup" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {profiles.map(profile => (
+                      <SelectItem key={profile.id} value={profile.id}>
+                        {profile.name} ({profile.data.panel_size}kW, {profile.data.sunlight_hours}h)
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
 
             {/* Panel Size */}
             <div className="space-y-2">
@@ -229,9 +299,10 @@ const SolarCalculator = () => {
                   onClick={saveCalculation} 
                   className="w-full bg-green-600 hover:bg-green-700"
                   size="lg"
+                  disabled={saving}
                 >
                   <Save className="h-4 w-4 mr-2" />
-                  Save to My Account
+                  {saving ? 'Saving...' : 'Save to My Account'}
                 </Button>
                 
                 <Button 
@@ -256,15 +327,7 @@ const SolarCalculator = () => {
                   <Button 
                     size="sm" 
                     className="w-full"
-                    onClick={() => {
-                      if (formData.profileName) {
-                        toast({
-                          title: "Profile saved!",
-                          description: `"${formData.profileName}" has been saved for future use.`
-                        });
-                        setShowSaveProfile(false);
-                      }
-                    }}
+                    onClick={saveProfile}
                   >
                     Save Profile
                   </Button>
