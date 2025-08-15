@@ -206,8 +206,8 @@ class GreenWalletAPITester:
             if response.status_code == 200:
                 data = response.json()
                 if isinstance(data, list) and len(data) > 0:
-                    # Check if our test calculation is in the list
-                    found = any(calc["id"] == self.test_calculation_id for calc in data)
+                    # Check if our test calculation is in the list (handle both _id and id)
+                    found = any((calc.get("id") or calc.get("_id")) == self.test_calculation_id for calc in data)
                     if found:
                         self.log("✅ Get calculations successful")
                         self.results["calculation_get"] = True
