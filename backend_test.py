@@ -76,7 +76,8 @@ class GreenWalletAPITester:
                 data = response.json()
                 if "access_token" in data and "user" in data:
                     self.access_token = data["access_token"]
-                    self.user_id = data["user"]["id"]
+                    # Handle both _id and id fields
+                    self.user_id = data["user"].get("id") or data["user"].get("_id")
                     self.log("✅ User registration successful")
                     self.results["auth_register"] = True
                     return True
