@@ -4,13 +4,21 @@ import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
-import { Leaf, IndianRupee } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
+import { Leaf, IndianRupee, Building, User } from 'lucide-react';
 import { useAuth } from '../App';
 import { useToast } from '../hooks/use-toast';
 
 const AuthPage = () => {
   const [loginData, setLoginData] = useState({ email: '', password: '' });
-  const [registerData, setRegisterData] = useState({ name: '', email: '', password: '' });
+  const [registerData, setRegisterData] = useState({ 
+    name: '', 
+    email: '', 
+    password: '', 
+    userType: 'individual',
+    orgName: '',
+    orgType: 'company' 
+  });
   const { login, register } = useAuth();
   const { toast } = useToast();
 
@@ -33,11 +41,22 @@ const AuthPage = () => {
 
   const handleRegister = (e) => {
     e.preventDefault();
-    const success = register(registerData.email, registerData.password, registerData.name);
+    const success = register(
+      registerData.email, 
+      registerData.password, 
+      registerData.name,
+      registerData.userType,
+      registerData.userType === 'org_admin' ? {
+        orgName: registerData.orgName,
+        orgType: registerData.orgType
+      } : null
+    );
     if (success) {
       toast({
         title: "Welcome to GreenWallet!",
-        description: "Your account has been created successfully.",
+        description: registerData.userType === 'org_admin' 
+          ? "Your organization account has been created successfully."
+          : "Your account has been created successfully.",
       });
     } else {
       toast({
@@ -73,8 +92,8 @@ const AuthPage = () => {
           <CardContent>
             <Tabs defaultValue="login" className="w-full">
               <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="login">Login</TabsTrigger>
-                <TabsTrigger value="register">Register</TabsTrigger>
+                <TabsTrigger value="login">Sign In</TabsTrigger>
+                <TabsTrigger value="register">Sign Up</TabsTrigger>
               </TabsList>
               
               <TabsContent value="login" className="space-y-4 mt-6">
@@ -102,13 +121,40 @@ const AuthPage = () => {
                     />
                   </div>
                   <Button type="submit" className="w-full bg-green-600 hover:bg-green-700">
-                    Login
+                    Sign In
                   </Button>
                 </form>
               </TabsContent>
               
               <TabsContent value="register" className="space-y-4 mt-6">
                 <form onSubmit={handleRegister} className="space-y-4">
+                  {/* Account Type Selection */}
+                  <div className="space-y-2">
+                    <Label>Account Type</Label>
+                    <Select 
+                      value={registerData.userType} 
+                      onValueChange={(value) => setRegisterData(prev => ({ ...prev, userType: value }))}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="individual">
+                          <div className="flex items-center space-x-2">
+                            <User className="h-4 w-4" />
+                            <span>Individual User</span>
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="org_admin">
+                          <div className="flex items-center space-x-2">
+                            <Building className="h-4 w-4" />
+                            <span>Organization Admin</span>
+                          </div>
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
                   <div className="space-y-2">
                     <Label htmlFor="register-name">Full Name</Label>
                     <Input
@@ -120,6 +166,7 @@ const AuthPage = () => {
                       required
                     />
                   </div>
+                  
                   <div className="space-y-2">
                     <Label htmlFor="register-email">Email</Label>
                     <Input
@@ -131,6 +178,7 @@ const AuthPage = () => {
                       required
                     />
                   </div>
+                  
                   <div className="space-y-2">
                     <Label htmlFor="register-password">Password</Label>
                     <Input
@@ -142,6 +190,43 @@ const AuthPage = () => {
                       required
                     />
                   </div>
+
+                  {/* Organization Fields */}
+                  {registerData.userType === 'org_admin' && (
+                    <>
+                      <div className="space-y-2">
+                        <Label htmlFor="org-name">Organization Name</Label>
+                        <Input
+                          id="org-name"
+                          type="text"
+                          placeholder="Your Company/School/Society"
+                          value={registerData.orgName}
+                          onChange={(e) => setRegisterData(prev => ({ ...prev, orgName: e.target.value }))}
+                          required
+                        />
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <Label>Organization Type</Label>
+                        <Select 
+                          value={registerData.orgType} 
+                          onValueChange={(value) => setRegisterData(prev => ({ ...prev, orgType: value }))}
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="company">Company</SelectItem>
+                            <SelectItem value="school">School/University</SelectItem>
+                            <SelectItem value="society">Housing Society</SelectItem>
+                            <SelectItem value="ngo">NGO</SelectItem>
+                            <SelectItem value="other">Other</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </>
+                  )}
+                  
                   <Button type="submit" className="w-full bg-green-600 hover:bg-green-700">
                     Create Account
                   </Button>
@@ -154,8 +239,8 @@ const AuthPage = () => {
         {/* Demo credentials */}
         <div className="mt-6 p-4 bg-white/70 rounded-lg text-sm text-gray-600 text-center">
           <p className="font-medium mb-1">Demo Credentials</p>
-          <p>Email: demo@greenwallet.com</p>
-          <p>Password: demo123</p>
+          <p>Individual: demo@greenwallet.com / demo123</p>
+          <p>Organization: org@greenwallet.com / admin123</p>
         </div>
       </div>
     </div>
