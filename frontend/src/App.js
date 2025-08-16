@@ -11,6 +11,8 @@ import WaterCalculator from './components/calculators/WaterCalculator';
 import TransportCalculator from './components/calculators/TransportCalculator';
 import ElectricityCalculator from './components/calculators/ElectricityCalculator';
 import History from './components/History';
+import Education from './components/Education';
+import Organization from './components/Organization';
 import Layout from './components/Layout';
 
 // Import API services
@@ -95,9 +97,21 @@ function App() {
     }
   };
 
-  const register = async (email, password, name) => {
+  const register = async (email, password, name, userType = 'individual', orgData = null) => {
     try {
-      const result = await authAPI.register({ email, password, name });
+      const registrationData = {
+        email, 
+        password, 
+        name,
+        user_type: userType
+      };
+
+      // If registering as org admin, we'll handle org creation in backend
+      if (userType === 'org_admin' && orgData) {
+        registrationData.org_data = orgData;
+      }
+
+      const result = await authAPI.register(registrationData);
       
       // Store token and user data
       localStorage.setItem('auth_token', result.access_token);
@@ -184,6 +198,14 @@ function App() {
             <Route 
               path="/electricity" 
               element={user ? <Layout><ElectricityCalculator /></Layout> : <Navigate to="/auth" />} 
+            />
+            <Route 
+              path="/education" 
+              element={user ? <Layout><Education /></Layout> : <Navigate to="/auth" />} 
+            />
+            <Route 
+              path="/organization" 
+              element={user ? <Layout><Organization /></Layout> : <Navigate to="/auth" />} 
             />
             <Route 
               path="/history" 
