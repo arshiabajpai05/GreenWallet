@@ -61,6 +61,3 @@ class UserStats(BaseModel):
     calculation_count: int = 0
     education_points: int = 0
     certifications: int = 0
-
-# Import Enum here to avoid circular import
-from enum import Enum
