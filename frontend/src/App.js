@@ -170,34 +170,42 @@ function App() {
             <Route 
               path="/" 
               element={user ? <Layout><Dashboard /></Layout> : <Navigate to="/auth" />} 
+              }
             />
             <Route 
               path="/solar" 
               element={user ? <Layout><SolarCalculator /></Layout> : <Navigate to="/auth" />} 
+              }
             />
             <Route 
               path="/afforestation" 
               element={user ? <Layout><AfforestationCalculator /></Layout> : <Navigate to="/auth" />} 
+              }
             />
             <Route 
               path="/water" 
               element={user ? <Layout><WaterCalculator /></Layout> : <Navigate to="/auth" />} 
+              }
             />
             <Route 
               path="/transport" 
               element={user ? <Layout><TransportCalculator /></Layout> : <Navigate to="/auth" />} 
+              }
             />
             <Route 
               path="/electricity" 
               element={user ? <Layout><ElectricityCalculator /></Layout> : <Navigate to="/auth" />} 
+              }
             />
             <Route 
               path="/history" 
               element={user ? <Layout><History /></Layout> : <Navigate to="/auth" />} 
+              }
             />
             <Route 
               path="/education" 
               element={user ? <Layout><Education /></Layout> : <Navigate to="/auth" />} 
+              }
             />
           </Routes>
           <Toaster />
