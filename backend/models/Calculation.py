@@ -6,6 +6,7 @@ import uuid
 
 class CalculationType(str, Enum):
     solar = "solar"
+    afforestation = "afforestation"
     water = "water"
     transport = "transport"
     electricity = "electricity"

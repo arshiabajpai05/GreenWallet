@@ -9,11 +9,11 @@ import { Sun, IndianRupee, Leaf, Save, Calculator } from 'lucide-react';
 import { useAuth } from '../../App';
 import { useToast } from '../../hooks/use-toast';
 import { calculationsAPI, profilesAPI } from '../../services/api';
-import { RATES } from '../../mock'; // Keep rates as constants
 
 const SolarCalculator = () => {
   const [formData, setFormData] = useState({
-    panelSize: '',
+    monthlyBill: '',
+    rooftopArea: '',
     sunlightHours: '',
     profileName: ''
   });
@@ -39,10 +39,11 @@ const SolarCalculator = () => {
   };
 
   const calculateSavings = () => {
-    const panelSize = parseFloat(formData.panelSize);
+    const monthlyBill = parseFloat(formData.monthlyBill);
+    const rooftopArea = parseFloat(formData.rooftopArea);
     const sunlightHours = parseFloat(formData.sunlightHours);
     
-    if (!panelSize || !sunlightHours) {
+    if (!monthlyBill || !rooftopArea || !sunlightHours) {
       toast({
         title: "Missing information",
         description: "Please fill in all required fields.",
@@ -51,23 +52,32 @@ const SolarCalculator = () => {
       return;
     }
 
-    // Calculate monthly generation (kWh)
-    const monthlyGeneration = panelSize * sunlightHours * 30; // 30 days
+    // System Capacity (kW) = Rooftop Area × 0.01
+    const systemCapacity = rooftopArea * 0.01;
     
-    // Calculate monthly savings (₹)
-    const moneySaved = monthlyGeneration * RATES.electricity;
+    // Monthly Generation (kWh) = System Capacity × Sunlight Hours × 30 × 0.8
+    const monthlyGeneration = systemCapacity * sunlightHours * 30 * 0.8;
     
-    // Calculate CO₂ reduction (kg)
-    const co2Reduced = monthlyGeneration * RATES.electricityCO2;
+    // Monthly Savings (₹) = Monthly Generation × 6
+    const moneySaved = monthlyGeneration * 6;
     
-    // Calculate points (1 point per ₹1 + 1 point per kg CO₂)
-    const points = Math.round(moneySaved + co2Reduced);
-
+    // Annual Savings (₹) = Monthly Savings × 12
+    const annualSavings = moneySaved * 12;
+    
+    // Annual CO₂ Reduction (kg) = Monthly Generation × 12 × 0.82
+    const annualCO2Reduction = monthlyGeneration * 12 * 0.82;
+    
+    // Points = Annual CO₂ Reduction × 10
+    const points = Math.round(annualCO2Reduction * 10);
+    
     setResults({
+      systemCapacity,
       monthlyGeneration,
       moneySaved,
-      co2Reduced,
-      points
+      annualSavings,
+      annualCO2Reduction,
+      points,
+      monthlyBill
     });
   };
 
@@ -78,12 +88,13 @@ const SolarCalculator = () => {
     try {
       await calculationsAPI.create({
         type: 'solar',
-        title: `Solar Panel (${formData.panelSize}kW)`,
+        title: `Solar Panel (${results.systemCapacity.toFixed(1)}kW)`,
         money_saved: results.moneySaved,
-        co2_reduced: results.co2Reduced,
+        co2_reduced: results.annualCO2Reduction / 12, // Monthly CO2 for consistency
         points: results.points,
         details: {
-          panel_size: formData.panelSize + 'kW',
+          system_capacity: results.systemCapacity.toFixed(1) + 'kW',
+          rooftop_area: formData.rooftopArea + ' sqft',
           sunlight_hours: formData.sunlightHours,
           monthly_generation: results.monthlyGeneration.toFixed(0) + ' kWh'
         }
@@ -97,7 +108,7 @@ const SolarCalculator = () => {
       });
 
       // Reset form
-      setFormData({ panelSize: '', sunlightHours: '', profileName: '' });
+      setFormData({ monthlyBill: '', rooftopArea: '', sunlightHours: '', profileName: '' });
       setResults(null);
     } catch (error) {
       console.error('Failed to save calculation:', error);
@@ -112,7 +123,7 @@ const SolarCalculator = () => {
   };
 
   const saveProfile = async () => {
-    if (!formData.profileName || !formData.panelSize || !formData.sunlightHours) {
+    if (!formData.profileName || !formData.rooftopArea || !formData.sunlightHours) {
       toast({
         title: "Missing information",
         description: "Please fill in profile name and calculator fields.",
@@ -126,7 +137,8 @@ const SolarCalculator = () => {
         type: 'solar',
         name: formData.profileName,
         data: {
-          panel_size: parseFloat(formData.panelSize),
+          monthly_bill: parseFloat(formData.monthlyBill),
+          rooftop_area: parseFloat(formData.rooftopArea),
           sunlight_hours: parseFloat(formData.sunlightHours)
         }
       });
@@ -155,7 +167,8 @@ const SolarCalculator = () => {
     if (profile) {
       setFormData(prev => ({
         ...prev,
-        panelSize: profile.data.panel_size.toString(),
+        monthlyBill: profile.data.monthly_bill?.toString() || '',
+        rooftopArea: profile.data.rooftop_area.toString(),
         sunlightHours: profile.data.sunlight_hours.toString()
       }));
     }
@@ -198,7 +211,7 @@ const SolarCalculator = () => {
                   <SelectContent>
                     {profiles.map(profile => (
                       <SelectItem key={profile.id} value={profile.id}>
-                        {profile.name} ({profile.data.panel_size}kW, {profile.data.sunlight_hours}h)
+                        {profile.name} ({profile.data.rooftop_area} sqft, {profile.data.sunlight_hours}h)
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -206,20 +219,35 @@ const SolarCalculator = () => {
               </div>
             )}
 
-            {/* Panel Size */}
+            {/* Monthly Bill */}
             <div className="space-y-2">
-              <Label htmlFor="panelSize">Solar Panel Size (kW) *</Label>
+              <Label htmlFor="monthlyBill">Monthly Electricity Bill (₹) *</Label>
               <Input
-                id="panelSize"
+                id="monthlyBill"
                 type="number"
-                placeholder="e.g., 3"
-                step="0.5"
+                placeholder="e.g., 2500"
                 min="0"
-                value={formData.panelSize}
-                onChange={(e) => setFormData(prev => ({ ...prev, panelSize: e.target.value }))}
+                value={formData.monthlyBill}
+                onChange={(e) => setFormData(prev => ({ ...prev, monthlyBill: e.target.value }))}
               />
               <p className="text-sm text-gray-500">
-                Typical home systems: 1-10 kW
+                Your current monthly electricity bill
+              </p>
+            </div>
+
+            {/* Rooftop Area */}
+            <div className="space-y-2">
+              <Label htmlFor="rooftopArea">Rooftop Area (sqft) *</Label>
+              <Input
+                id="rooftopArea"
+                type="number"
+                placeholder="e.g., 500"
+                min="0"
+                value={formData.rooftopArea}
+                onChange={(e) => setFormData(prev => ({ ...prev, rooftopArea: e.target.value }))}
+              />
+              <p className="text-sm text-gray-500">
+                Available rooftop area for solar panels
               </p>
             </div>
 
@@ -257,11 +285,11 @@ const SolarCalculator = () => {
           <Card>
             <CardHeader>
               <CardTitle className="text-green-700">Your Solar Impact</CardTitle>
-              <CardDescription>Monthly savings and environmental benefits</CardDescription>
+              <CardDescription>System details and annual benefits</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               {/* Key Metrics */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4">
                 <div className="text-center p-4 bg-green-50 rounded-lg">
                   <IndianRupee className="h-8 w-8 text-green-600 mx-auto mb-2" />
                   <div className="text-2xl font-bold text-green-700">
@@ -272,25 +300,34 @@ const SolarCalculator = () => {
                 <div className="text-center p-4 bg-emerald-50 rounded-lg">
                   <Leaf className="h-8 w-8 text-emerald-600 mx-auto mb-2" />
                   <div className="text-2xl font-bold text-emerald-700">
-                    {results.co2Reduced.toFixed(1)} kg
+                    {results.annualCO2Reduction.toFixed(1)} kg
                   </div>
-                  <p className="text-sm text-gray-600">CO₂ Reduced/Month</p>
+                  <p className="text-sm text-gray-600">CO₂ Reduced/Year</p>
+                </div>
+                <div className="text-center p-4 bg-amber-50 rounded-lg">
+                  <div className="h-8 w-8 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-2">
+                    <span className="text-amber-600 font-bold text-lg">P</span>
+                  </div>
+                  <div className="text-2xl font-bold text-amber-700">
+                    {results.points.toLocaleString()}
+                  </div>
+                  <p className="text-sm text-gray-600">Points Earned</p>
                 </div>
               </div>
 
               {/* Details */}
               <div className="space-y-3">
                 <div className="flex justify-between items-center">
+                  <span className="text-gray-600">System Capacity:</span>
+                  <Badge variant="outline">{results.systemCapacity.toFixed(1)} kW</Badge>
+                </div>
+                <div className="flex justify-between items-center">
                   <span className="text-gray-600">Monthly Generation:</span>
                   <Badge variant="outline">{results.monthlyGeneration.toFixed(0)} kWh</Badge>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-gray-600">Points Earned:</span>
-                  <Badge className="bg-amber-100 text-amber-800">{results.points} points</Badge>
-                </div>
-                <div className="flex justify-between items-center">
                   <span className="text-gray-600">Annual Savings:</span>
-                  <Badge variant="secondary">₹{(results.moneySaved * 12).toFixed(0)}</Badge>
+                  <Badge variant="secondary">₹{results.annualSavings.toFixed(0)}</Badge>
                 </div>
               </div>
 
@@ -338,18 +375,20 @@ const SolarCalculator = () => {
         )}
       </div>
 
-      {/* Information Card */}
-      <Card className="bg-gradient-to-r from-yellow-50 to-orange-50 border-yellow-200">
+      {/* Tips Section */}
+      <Card className="bg-gradient-to-r from-green-50 to-yellow-50 border-green-200">
         <CardContent className="pt-6">
           <div className="flex items-start space-x-3">
             <Sun className="h-6 w-6 text-yellow-600 flex-shrink-0 mt-1" />
             <div>
-              <h3 className="font-semibold text-yellow-800 mb-2">Solar Power Benefits</h3>
-              <ul className="text-sm text-yellow-700 space-y-1">
+              <h3 className="font-semibold text-green-800 mb-2">Tips for Maximizing Solar Savings</h3>
+              <ul className="text-sm text-green-700 space-y-1">
                 <li>• Reduce electricity bills by 70-90%</li>
                 <li>• Government subsidies available up to 40%</li>
                 <li>• 25-year warranty on most solar panels</li>
                 <li>• Payback period: 3-5 years in India</li>
+                <li>• Clean panels monthly for optimal performance</li>
+                <li>• South-facing roofs get maximum sunlight</li>
               </ul>
             </div>
           </div>

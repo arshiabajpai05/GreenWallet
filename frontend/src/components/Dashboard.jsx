@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
-import { IndianRupee, Leaf, Trophy, TrendingUp, Sun, Droplets, Car, Zap } from 'lucide-react';
+import { IndianRupee, Leaf, Trophy, TrendingUp, Sun, TreePine, Droplets, Car, Zap, BookOpen } from 'lucide-react';
 import { useAuth } from '../App';
 import { Link } from 'react-router-dom';
 import { calculationsAPI } from '../services/api';
@@ -30,6 +30,7 @@ const Dashboard = () => {
   const getTypeIcon = (type) => {
     const icons = {
       solar: Sun,
+      afforestation: TreePine,
       water: Droplets,
       transport: Car,
       electricity: Zap
@@ -40,6 +41,7 @@ const Dashboard = () => {
   const getTypeColor = (type) => {
     const colors = {
       solar: 'text-yellow-600 bg-yellow-100',
+      afforestation: 'text-green-600 bg-green-100',
       water: 'text-blue-600 bg-blue-100',
       transport: 'text-purple-600 bg-purple-100',
       electricity: 'text-orange-600 bg-orange-100'
@@ -138,11 +140,17 @@ const Dashboard = () => {
       </div>
 
       {/* Quick Actions */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
         <Link to="/solar">
           <Button className="h-20 w-full bg-yellow-50 hover:bg-yellow-100 text-yellow-700 border-2 border-yellow-200 flex flex-col items-center justify-center space-y-2">
             <Sun className="h-6 w-6" />
             <span className="text-sm font-medium">Solar Calculator</span>
+          </Button>
+        </Link>
+        <Link to="/afforestation">
+          <Button className="h-20 w-full bg-green-50 hover:bg-green-100 text-green-700 border-2 border-green-200 flex flex-col items-center justify-center space-y-2">
+            <TreePine className="h-6 w-6" />
+            <span className="text-sm font-medium">Afforestation</span>
           </Button>
         </Link>
         <Link to="/water">
@@ -161,6 +169,12 @@ const Dashboard = () => {
           <Button className="h-20 w-full bg-orange-50 hover:bg-orange-100 text-orange-700 border-2 border-orange-200 flex flex-col items-center justify-center space-y-2">
             <Zap className="h-6 w-6" />
             <span className="text-sm font-medium">Electricity</span>
+          </Button>
+        </Link>
+        <Link to="/education">
+          <Button className="h-20 w-full bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border-2 border-indigo-200 flex flex-col items-center justify-center space-y-2">
+            <BookOpen className="h-6 w-6" />
+            <span className="text-sm font-medium">Learn</span>
           </Button>
         </Link>
       </div>

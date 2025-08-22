@@ -11,10 +11,12 @@ import {
 import { 
   Home, 
   Sun, 
+  TreePine,
   Droplets, 
   Car, 
   Zap, 
   History, 
+  BookOpen,
   Leaf, 
   IndianRupee,
   LogOut,
@@ -35,10 +37,12 @@ const Layout = ({ children }) => {
   const navItems = [
     { path: '/', label: 'Dashboard', icon: Home },
     { path: '/solar', label: 'Solar', icon: Sun },
+    { path: '/afforestation', label: 'Trees', icon: TreePine },
     { path: '/water', label: 'Water', icon: Droplets },
     { path: '/transport', label: 'Transport', icon: Car },
     { path: '/electricity', label: 'Electricity', icon: Zap },
     { path: '/history', label: 'History', icon: History },
+    { path: '/education', label: 'Learn', icon: BookOpen },
   ];
 
   return (

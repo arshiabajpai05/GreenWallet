@@ -7,10 +7,12 @@ import './App.css';
 import AuthPage from './components/AuthPage';
 import Dashboard from './components/Dashboard';
 import SolarCalculator from './components/calculators/SolarCalculator';
+import AfforestationCalculator from './components/calculators/AfforestationCalculator';
 import WaterCalculator from './components/calculators/WaterCalculator';
 import TransportCalculator from './components/calculators/TransportCalculator';
 import ElectricityCalculator from './components/calculators/ElectricityCalculator';
 import History from './components/History';
+import Education from './components/Education';
 import Layout from './components/Layout';
 
 // Import API services
@@ -174,6 +176,10 @@ function App() {
               element={user ? <Layout><SolarCalculator /></Layout> : <Navigate to="/auth" />} 
             />
             <Route 
+              path="/afforestation" 
+              element={user ? <Layout><AfforestationCalculator /></Layout> : <Navigate to="/auth" />} 
+            />
+            <Route 
               path="/water" 
               element={user ? <Layout><WaterCalculator /></Layout> : <Navigate to="/auth" />} 
             />
@@ -188,6 +194,10 @@ function App() {
             <Route 
               path="/history" 
               element={user ? <Layout><History /></Layout> : <Navigate to="/auth" />} 
+            />
+            <Route 
+              path="/education" 
+              element={user ? <Layout><Education /></Layout> : <Navigate to="/auth" />} 
             />
           </Routes>
           <Toaster />

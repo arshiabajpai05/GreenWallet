@@ -14,6 +14,7 @@ import {
   Droplets, 
   Car, 
   Zap,
+  TreePine,
   IndianRupee,
   Leaf,
   Calendar
@@ -55,6 +56,7 @@ const History = () => {
   const getTypeIcon = (type) => {
     const icons = {
       solar: Sun,
+      afforestation: TreePine,
       water: Droplets,
       transport: Car,
       electricity: Zap
@@ -65,6 +67,7 @@ const History = () => {
   const getTypeColor = (type) => {
     const colors = {
       solar: 'text-yellow-600 bg-yellow-100',
+      afforestation: 'text-green-600 bg-green-100',
       water: 'text-blue-600 bg-blue-100',
       transport: 'text-purple-600 bg-purple-100',
       electricity: 'text-orange-600 bg-orange-100'
@@ -208,6 +211,7 @@ const History = () => {
               <SelectContent>
                 <SelectItem value="all">All Types</SelectItem>
                 <SelectItem value="solar">Solar</SelectItem>
+                <SelectItem value="afforestation">Afforestation</SelectItem>
                 <SelectItem value="water">Water</SelectItem>
                 <SelectItem value="transport">Transport</SelectItem>
                 <SelectItem value="electricity">Electricity</SelectItem>
